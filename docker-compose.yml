@@ -23,7 +23,6 @@ services:
             - ./.env.prod
         depends_on:
             - db
-
     db: 
         image: postgres:12.0-alpine
         volumes:
