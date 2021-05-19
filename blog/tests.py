@@ -3,12 +3,39 @@ from bs4 import BeautifulSoup
 from .models import Post 
 from django.contrib.auth.models import User
 
+
 # Create your tests here.
 class TestView(TestCase):
     def setUp(self):
         self.client = Client()
         self.user_jieun = User.objects.create_user(username='jieun', password='jieunjieun')
         self.user_hani = User.objects.create_user(username='hani', password='hanihani')
+
+    def test_create_post(self):
+        # 로그인을 하지 않으면 status_code 가 200이면 안 된다. 
+        response = self.client.get('/blog/create_post/')
+        self.assertNotEqual(response.status_code, 200)
+        # 로그인을 한다
+        self.client.login(username='jieun', password='jieunjieun')
+
+        response = self.client.get('/blog/create_post/')
+        self.assertEqual(response.status_code, 200)
+        soup = BeautifulSoup(response.content, 'html.parser')
+
+        self.assertEqual('Create Post - Blog', soup.title.text)
+        main_area = soup.find('div', id='main_area')
+        self.assertIn('Create New Post', main_area.text)
+
+        self.client.post(
+            '/blog/create_post/',
+            {
+                'title' : 'Post Form 만들기',
+                'content' : "Post Form 페이지를 만듭시다.",
+            }
+        )
+        last_post = Post.objects.last()
+        self.assertEqual(last_post.title, "Post Form 만들기")
+        self.assertEqual(last_post.author.username, 'jieun')
 
     def test_post_list(self):
         # 1.1. 포스트 목록 페이지를 가져온다. 
