@@ -10,14 +10,21 @@ class TestView(TestCase):
         self.client = Client()
         self.user_jieun = User.objects.create_user(username='jieun', password='jieunjieun')
         self.user_hani = User.objects.create_user(username='hani', password='hanihani')
+        self.user_hani.is_staff=True
+        self.user_hani.save()
 
     def test_create_post(self):
         # 로그인을 하지 않으면 status_code 가 200이면 안 된다. 
         response = self.client.get('/blog/create_post/')
         self.assertNotEqual(response.status_code, 200)
-        # 로그인을 한다
-        self.client.login(username='jieun', password='jieunjieun')
 
+        # staff 가 아닌 jieun 이 로그인을 한다. 
+        self.client.login(username='jieun', password='jieunjieun')
+        response = self.client.get('/blog/create_post/')
+        self.assertNotEqual(response.status_code, 200)
+
+        # staff인 hani로 로그인을 한다
+        self.client.login(username='hani', password='hanihani')
         response = self.client.get('/blog/create_post/')
         self.assertEqual(response.status_code, 200)
         soup = BeautifulSoup(response.content, 'html.parser')
@@ -35,7 +42,7 @@ class TestView(TestCase):
         )
         last_post = Post.objects.last()
         self.assertEqual(last_post.title, "Post Form 만들기")
-        self.assertEqual(last_post.author.username, 'jieun')
+        self.assertEqual(last_post.author.username, 'hani')
 
     def test_post_list(self):
         # 1.1. 포스트 목록 페이지를 가져온다. 
