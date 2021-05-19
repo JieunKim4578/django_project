@@ -1,11 +1,14 @@
 from django.test import TestCase, Client
 from bs4 import BeautifulSoup
 from .models import Post 
+from django.contrib.auth.models import User
 
 # Create your tests here.
 class TestView(TestCase):
     def setUp(self):
         self.client = Client()
+        self.user_jieun = User.objects.create_user(username='jieun', password='jieunjieun')
+        self.user_hani = User.objects.create_user(username='hani', password='hanihani')
 
     def test_post_list(self):
         # 1.1. 포스트 목록 페이지를 가져온다. 
@@ -31,10 +34,12 @@ class TestView(TestCase):
         post_001 = Post.objects.create(
             title='첫 번째 포스트입니다.', 
             content='Hello World. We are the world.',
+            author = self.user_jieun, 
         )
         post_002 = Post.objects.create(
             title='두 번째 포스트입니다.',
             content='1등이 전부는 아니잖아요?',
+            author = self.user_hani, 
         )
         self.assertEqual(Post.objects.count(), 2)
 
@@ -50,11 +55,15 @@ class TestView(TestCase):
         # 3.4. '아직 게시물이 없습니다' 라는 문구는 더 이상 보이지 않는다. 
         self.assertNotIn('아직 게시물이 없습니다', main_area.text)
 
+        self.assertIn(self.user_jieun.username.upper(), main_area.text)
+        self.assertIn(self.user_hani.username.upper(), main_area.text)
+
     def test_post_detail(self):
         # 1.1. 포스트가 하나 있다.
         post_001 = Post.objects.create(
             title='첫 번째 포스트입니다.',
             content='Hello World. We are the world.',
+            author = self.user_jieun, 
         )
         # 1.2. 그 포스트의 url 은 '/blog/1/'이다. 
         self.assertEqual(post_001.get_absolute_url(), '/blog/1')
@@ -64,17 +73,23 @@ class TestView(TestCase):
         response = self.client.get(post_001.get_absolute_url(), follow=True)
         self.assertEqual(response.status_code, 200)
         soup = BeautifulSoup(response.content, 'html.parser')
+
         # 2.2. 포스트 목록 페이지와 똑같은 내비게이션 바가 있다.
         navbar = soup.nav
         self.assertIn('Blog', navbar.text)
         self.assertIn('About me', navbar.text) 
+
         # 2.3. 첫 번째 포스트의 제목이 웹 브라우저 탭 타이틀에 들어 있다. 
         self.assertIn(post_001.title, soup.title.text)
+
         # 2.4. 첫 번째 포스트의 제목이 포스트 영역에 있다. 
         main_area = soup.find('div', id='main_area')
         post_area = main_area.find('div', id='post_area')
         self.assertIn(post_001.title, post_area.text)
+
         # 2.5. 첫 번째 포스트의 작성자(author)가 포스트 영역에 있다(아직 구현할 수 없음).
+
+        self.assertIn(self.user_jieun.username.upper(), post_area.text)
         # 2.6. 첫 번째 포스트의 내용(content)이 포스트 영역에 있다. 
         self.assertIn(post_001.content, post_area.text)
 
