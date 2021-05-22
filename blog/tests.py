@@ -1,6 +1,6 @@
 from django.test import TestCase, Client
 from bs4 import BeautifulSoup
-from .models import Post, Category
+from .models import Post, Category, Tag
 from django.contrib.auth.models import User
 
 
@@ -15,23 +15,34 @@ class TestView(TestCase):
         self.category_midsize = Category.objects.create(name='midsize', slug='midsize')
         self.category_semi = Category.objects.create(name='semi', slug='semi')
 
+        self.tag_grandeur = Tag.objects.create(name='Grandeur', slug='Grandeur')
+        self.tag_spark = Tag.objects.create(name='spark', slug='spark')
+        self.tag_ionic = Tag.objects.create(name='ionic', slug='ionic')
+
         self.post_001 = Post.objects.create(
             title = '첫 번째 포스트입니다.', 
             content = 'Hello World. We are the world.',
             category = self.category_midsize,
             author = self.user_jieun, 
+            
         )
+        self.post_001.tags.add(self.tag_grandeur)
+
         self.post_002 = Post.objects.create(
             title = '두 번째 포스트입니다.',
             content = '1등이 전부는 아니잖아요?',
             category = self.category_semi, 
             author = self.user_hani, 
-        )            
+        )       
+
         self.post_003 = Post.objects.create(
             title = '세 번째 포스트입니다.',
             content = 'Hello World. We are the world.',
             author = self.user_jieun, 
         )
+        self.post_003.tags.add(self.tag_ionic)
+        self.post_003.tags.add(self.tag_spark)
+
 
     def test_update_post(self):
         self.post_003 = Post.objects.create(
@@ -178,16 +189,26 @@ class TestView(TestCase):
         self.assertIn(self.post_001.title, post_001_card.text)  # title이 있는지
         self.assertIn(self.post_001.category.name, post_001_card.text)  # category가 있는지
         self.assertIn(self.post_001.author.username.upper(), post_001_card.text)  # 작성자명이 있는지
+        self.assertIn(self.tag_grandeur.name, post_001_card.text)
+        self.assertNotIn(self.tag_spark.name, post_001_card.text)
+        self.assertNotIn(self.tag_ionic.name, post_001_card.text)
 
         post_002_card = main_area.find('div', id='post-2')
         self.assertIn(self.post_002.title, post_002_card.text)
         self.assertIn(self.post_002.category.name, post_002_card.text)
         self.assertIn(self.post_002.author.username.upper(), post_002_card.text)
+        self.assertNotIn(self.tag_grandeur.name, post_002_card.text)
+        self.assertNotIn(self.tag_spark.name, post_002_card.text)
+        self.assertNotIn(self.tag_ionic.name, post_002_card.text)
 
         post_003_card = main_area.find('div', id='post-3')
         self.assertIn('미분류', post_003_card.text)
         self.assertIn(self.post_003.title, post_003_card.text)
         self.assertIn(self.post_003.author.username.upper(), post_003_card.text)
+        self.assertNotIn(self.tag_grandeur.name, post_003_card.text)
+        self.assertIn(self.tag_spark.name, post_003_card.text)
+        self.assertIn(self.tag_ionic.name, post_003_card.text)
+
 
         # Post가 없는 경우
         Post.objects.all().delete()
@@ -224,4 +245,9 @@ class TestView(TestCase):
 
         # 2.6. 첫 번째 포스트의 내용(content)이 포스트 영역에 있다. 
         self.assertIn(self.post_001.content, post_area.text)
+
+        # tags test 
+        self.assertIn(self.tag_grandeur.name, post_area.text)
+        self.assertNotIn(self.tag_spark.name, post_area.text)
+        self.assertNotIn(self.tag_ionic.name, post_area.text)
 
