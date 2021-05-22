@@ -10,7 +10,7 @@
         {% endif %}
     {% endif %}
 
-    <h1>Blog</h1>
+    <h1>Blog {% if category %}<span class="badge badge-secondary">{{category}}{% endif %}</h1>
         {% if post_list.exists %}
             {% for p in post_list %}
             <!-- Blog post-->
